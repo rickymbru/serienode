@@ -2,8 +2,16 @@ const express = require('express');
 
 const routes = express.Router();
 
-const authController = require('./controllers/authController');
+require('dotenv').config()
 
-routes.post('/register',function (req, res){
-    res.send('POST request to the homepage')
-});
+const authController = require('./controllers/authController');
+const projectController = require('./controllers/projectController');
+const authMiddleware = require('./middleware/auth');
+
+routes.post('/auth/register', authController.create);
+
+routes.post('/auth/authenticate', authController.index);
+
+routes.get('/project', authMiddleware, projectController.create);
+
+module.exports = routes;
