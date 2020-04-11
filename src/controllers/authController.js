@@ -80,24 +80,17 @@ module.exports = {
                 }
             });           
             
-            // mailer.sendMail({
-            //     to: email,
-            //     from: 'rickymbru@gmail.com',
-            //     template: 'auth/forgot_password',
-            //     context: {token},
-            // }, (err) => {
-            //     //res.status(400).send({ error: 'Cannot send forgot send email'}); 
-            //     console.log(err);
-            //     //return
-            // });
-            //console.log(token, now);
-            let info = await mailer.sendMail({
-                from: '"Fred Foo 👻" <foo@example.com>', // sender address
-                to: "ricky@cedae.com.br", // list of receivers
+            await mailer.sendMail({
+                to: email,
+                from: 'rickymbru@gmail.com',
                 subject: "Redefinição de senha ✔", // Subject line
                 text: `${user.name}, utilize este token para redefinir sua senha: ${token}`, // plain text body
-                html: `<b>${user.name}, utilize o token abaixo para redefinir sua senha:<br><br> <p align="center">${token}</p></b>` // html body
-              });
+                template: 'auth/forgot_password',
+                context: {token: token, 
+                    user: user.name},
+            }, (err) => {
+                return res.status(400).send({ error: 'Cannot send forgot send email'}); 
+            });
             
             return res.status(200).send('Email are sent with sucess');            
 

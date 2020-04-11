@@ -12,16 +12,20 @@ const transport = nodemailer.createTransport({
     auth: { user, pass },
   });
 
-  const handlebarOptions = {
+  transport.use('compile', hbs({
+    /*viewEngine: 'handlebars',
+    viewPath: path.resolve('./src/resources/mail/'),
+    extName: '.html',*/
+
     viewEngine: {
       extName: '.html',
-      partialsDir: 'src/resources/mail/auth',
-      layoutsDir: 'src/resources/mail/auth',
-    },
-    viewPath: 'src/resources/mail/auth',
-    extName: '.html',
-  };
+      partialsDir: path.resolve('./src/resources/mail/'),
+      layoutsDir: path.resolve('./src/resources/mail/'),
+      defaultLayout: 'auth/forgot_password.html',
+  },
+  viewPath: path.resolve('./src/resources/mail/'),
+  extName: '.html'
 
-  transport.use('compile', hbs(handlebarOptions));
+}));
   
   module.exports = transport;
