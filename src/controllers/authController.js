@@ -1,4 +1,4 @@
-const user = require ('../models/user');
+const User = require ('../models/user');
 
 const bcrypt = require ('bcryptjs');
 
@@ -22,15 +22,15 @@ module.exports = {
         const { name, email, password, createdAt} = req.body;
 
         try {
-            if (await user.findOne({email}))
+            if (await User.findOne({email}))
                 return res.status(400).send({error: 'User already exists'})
 
-           const resUser = await user.create({ name, email, password, createdAt });
+           const user = await User.create({ name, email, password, createdAt });
 
-            resUser.password = undefined;
+            user.password = undefined;
 
-            return res.send({ resUser,
-                token: generateToken({ id: resUser.id })  
+            return res.send({ user,
+                token: generateToken({ id: user.id })  
             });
         } catch {
             res.status(400).send({ error: "Registration failed" });
@@ -42,18 +42,19 @@ module.exports = {
         const { email, password} = req.body;
 
         try{
-        const resUser = await user.findOne({ email }).select('+password');
-        
-        if(!await bcrypt.compare(password, resUser.password))
+        const user = await User.findOne({ email }).select('+password');
+
+        if(!await bcrypt.compare(password, user.password))
             return res.status(400).send({error: 'Invalid password'});
         
-        resUser.password = undefined;
+        user.password = undefined;
 
         return res.send({ 
-            resUser, 
-            token: generateToken({ id: resUser.id }) 
+            user, 
+            token: generateToken({ id: user.id }) 
         });
         }catch (err){
+            console.log(err);
             res.status(401).send({error: 'User not found'});            
         }
     },
@@ -61,11 +62,10 @@ module.exports = {
          const { email } = req.body;
 
          try {
-            const resUser = await user.findOne({ email });
-
-            if (!resUser){
-                res.status(400).send({ error: 'User not found'});
-                return
+            const user = await User.findOne({ email });
+            
+            if (!user){
+                return res.status(400).send({ error: 'User not found'});                
             }
 
             const token = crypto.randomBytes(20).toString('hex');
@@ -73,29 +73,68 @@ module.exports = {
             const now = new Date();
             now.setHours(now.getHours() + 1);
 
-            await user.findByIdAndUpdate (user.id, {
+            await User.findByIdAndUpdate (user.id, {
                 '$set': {
                     passwordResetToken: token,
                     passwordResetExpires: now,
                 }
             });           
             
-            mailer.sendMail({
-                to: email,
-                from: 'rickymbru@gmail.com',
-                template: 'auth/forget_password',
-                context: {token},
-            }, (err) => {
-                //res.status(400).send({ error: 'Cannot send forgot send email'}); 
-                //return
-            });
-            console.log(token, now); 
-
-            return res.send('OK');            
+            // mailer.sendMail({
+            //     to: email,
+            //     from: 'rickymbru@gmail.com',
+            //     template: 'auth/forgot_password',
+            //     context: {token},
+            // }, (err) => {
+            //     //res.status(400).send({ error: 'Cannot send forgot send email'}); 
+            //     console.log(err);
+            //     //return
+            // });
+            //console.log(token, now);
+            let info = await mailer.sendMail({
+                from: '"Fred Foo 👻" <foo@example.com>', // sender address
+                to: "ricky@cedae.com.br", // list of receivers
+                subject: "Redefinição de senha ✔", // Subject line
+                text: `${user.name}, utilize este token para redefinir sua senha: ${token}`, // plain text body
+                html: `<b>${user.name}, utilize o token abaixo para redefinir sua senha:<br><br> <p align="center">${token}</p></b>` // html body
+              });
+            
+            return res.status(200).send('Email are sent with sucess');            
 
          }catch (err) {
-            // console.log(err);
             return  res.status(400).send({ error: 'Erro on forgot password, try again'}); 
          }
+     },
+
+     async reset (req, res) {
+         const { email, password, token} = req.body;
+
+         try {
+            const user = await User.findOne({ email })
+                .select('+passwordResetToken passwordResetExpires');
+
+                if (!user){
+                    return res.status(400).send({ error: 'User not found'});                    
+                }
+                
+                if (token != user.passwordResetToken) {
+                    return res.status(401).send({ error: 'Token invalid'}); 
+                }
+
+                const now = new Date();
+
+                if (now > user.passwordResetExpires)
+                    return res.status(401).send({ error: 'Token expired, generate new one'}); 
+
+                user.password = password;
+
+                await user.save();
+
+                res.send();
+
+         } catch (err){
+                return res.status(400).send("Its not possible reset your password, try again")
+         }
+
      }
 }

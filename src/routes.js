@@ -12,6 +12,7 @@ routes.post('/auth/register', authController.create);
 
 routes.post('/auth/authenticate', authController.index);
 routes.post('/auth/forgot_password', authController.forgot);
+routes.post('/auth/reset_password', authController.reset);
 
 routes.get('/project', authMiddleware, projectController.create);
 
