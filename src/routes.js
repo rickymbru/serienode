@@ -14,6 +14,11 @@ routes.post('/auth/authenticate', authController.index);
 routes.post('/auth/forgot_password', authController.forgot);
 routes.post('/auth/reset_password', authController.reset);
 
-routes.get('/project', authMiddleware, projectController.create);
+routes.get('/', authMiddleware, projectController.list);
+routes.get('/:projectId', authMiddleware, projectController.show);
+routes.post('/', authMiddleware, projectController.create);
+routes.put('/:projectId', authMiddleware, projectController.update);
+routes.delete('/:projectId', authMiddleware, projectController.delete);
+
 
 module.exports = routes;
